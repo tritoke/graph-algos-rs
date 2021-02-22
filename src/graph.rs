@@ -58,7 +58,7 @@ impl<N: NodeTraits> Graph<N> {
         }
     }
 
-    /// returns whether an edge exists in the graph
+    /// Returns whether an edge exists in the graph
     pub fn is_edge(&self, u: &N, v: &N) -> bool {
         if let Some(succs) = self.backing_map.get(u) {
             succs.contains(v)
@@ -78,10 +78,15 @@ impl<N: NodeTraits> Graph<N> {
         self.backing_map.len()
     }
 
-    /// returns whether the graph is empty
+    /// Returns whether the graph is empty
     #[inline]
     pub fn is_empty(&self) -> bool {
         self.backing_map.is_empty()
+    }
+
+    /// Returns a reference to a node in the graph
+    pub fn node(&self, needle: N) -> Option<&N> {
+        self.backing_map.keys().find(|&key| *key == needle)
     }
 
     /// Returns an iterator over the nodes in a graph

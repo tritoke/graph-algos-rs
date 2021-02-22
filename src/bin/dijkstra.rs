@@ -15,7 +15,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::collections::HashMap;
+use std::collections::{HashMap,BinaryHeap};
 use graph_algos::{NodeTraits, WeightedGraph};
 
 fn main() {
@@ -23,10 +23,11 @@ fn main() {
 
     graph.fill_from_str(include_str!("../inputs/graph_3.in"));
 
+    // get references into the graph for the start and end node.
     let start = graph.node("a".into()).unwrap();
     let end = graph.node("e".into()).unwrap();
 
-    let (p, d) = bellman_ford(&graph, start);
+    let (p, d) = dijkstra(&graph, start);
     let path = get_path(&p, end);
 
     println!(
@@ -43,36 +44,11 @@ fn main() {
     println!("Path taken: {}", pathstr);
 }
 
-fn bellman_ford<'a, N: NodeTraits>(
+fn dijkstra<'a, N: NodeTraits>(
     graph: &'a WeightedGraph<N>,
     s: &'a N,
 ) -> (HashMap<&'a N, &'a N>, HashMap<&'a N, f64>) {
-    let mut pred_map: HashMap<&'a N, &'a N> = HashMap::new();
-    let mut dist_map: HashMap<&'a N, f64> =
-        graph.nodes().map(|node| (node, f64::INFINITY)).collect();
-
-    dist_map.insert(s, 0.0);
-
-    // loop until a round changes nothing
-    let nodes = graph.len();
-    for _ in 0..nodes - 1 {
-        let mut changed = false;
-        // perform relaxation
-        for ((u, v), w) in graph.weights() {
-            if dist_map[u] + w < dist_map[v] {
-                dist_map.insert(v, dist_map[u] + w);
-                pred_map.insert(v, u);
-                changed = true;
-            }
-        }
-
-        // break out if nothing happened this round
-        if !changed {
-            break;
-        };
-    }
-
-    (pred_map, dist_map)
+    unimplemented!()
 }
 
 /// extracts a path from the predecessor map and an end node

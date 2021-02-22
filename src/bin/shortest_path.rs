@@ -24,27 +24,30 @@ fn main() {
 
     println!("{:?}", graph);
 
-    let pred_map = shortest_paths(&graph, 1);
-    let path = get_path(&pred_map, 8);
+    let source = graph.node(1).unwrap();
+    let dest = graph.node(8).unwrap();
+
+    let pred_map = shortest_paths(&graph, source);
+    let path = get_path(&pred_map, dest);
 
     println!("{:?}", pred_map);
     println!("{:?}", path);
 }
 
 /// returns the predecessor map, from the graph and a start node
-fn shortest_paths<N: NodeTraits>(graph: &Graph<N>, s: N) -> HashMap<N, N> {
-    let mut discovered: VecDeque<&N> = vec![&s].into();
+fn shortest_paths<'a, N: NodeTraits>(graph: &'a Graph<N>, s: &'a N) -> HashMap<&'a N, &'a N> {
+    let mut discovered: VecDeque<&N> = vec![s].into();
     let mut finished: HashSet<&N> = HashSet::new();
 
-    let mut pred_map: HashMap<N, N> = HashMap::new();
-    pred_map.insert(s.clone(), s.clone());
+    let mut pred_map: HashMap<&N, &N> = HashMap::new();
+    pred_map.insert(s, s);
 
     while let Some(u) = discovered.pop_front() {
         finished.insert(u);
 
         if let Some(succs) = graph.succs(&u) {
             for v in succs.iter().filter(|v| !finished.contains(v)) {
-                pred_map.insert(v.clone(), u.clone());
+                pred_map.insert(v, u);
 
                 discovered.push_back(v);
             }
@@ -55,16 +58,16 @@ fn shortest_paths<N: NodeTraits>(graph: &Graph<N>, s: N) -> HashMap<N, N> {
 }
 
 /// extracts a path from the predecessor map and an end node
-fn get_path<N: NodeTraits>(pred_map: &HashMap<N, N>, end_node: N) -> Vec<N> {
-    let mut rev_path = vec![end_node.clone()];
+fn get_path<'a, N: NodeTraits>(pred_map: &HashMap<&'a N, &'a N>, end_node: &'a N) -> Vec<&'a N> {
+    let mut rev_path = vec![end_node];
     let mut next_node = end_node;
 
-    println!("{:?}", pred_map.get(&next_node));
+    println!("{:?}", pred_map.get(next_node));
 
-    while let Some(u) = pred_map.get(&next_node) {
-        if u.clone() != next_node {
-            next_node = u.clone();
-            rev_path.push(u.clone());
+    while let Some(u) = pred_map.get(next_node) {
+        if u != &next_node {
+            next_node = u;
+            rev_path.push(u);
         } else {
             break;
         }

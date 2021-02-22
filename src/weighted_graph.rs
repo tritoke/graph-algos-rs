@@ -88,6 +88,12 @@ impl<N: NodeTraits> WeightedGraph<N> {
         self.graph.is_empty()
     }
 
+    /// Returns a reference to a node in the graph
+    #[inline]
+    pub fn node(&self, needle: N) -> Option<&N> {
+        self.graph.node(needle)
+    }
+
     /// Returns an iterator over the nodes in the graph
     #[inline]
     pub fn nodes(&self) -> Nodes<N> {

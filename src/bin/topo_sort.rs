@@ -24,17 +24,18 @@ fn main() {
     graph.fill_from_str(include_str!("../inputs/graph_1.in"));
 
     // sort from node 1
-    let sorted = topological_sort(&graph, 1);
+    let source = graph.node(1).unwrap();
+    let sorted = topological_sort(&graph, source);
 
     println!("{:?}", graph);
 
     println!("{:?}", sorted);
 }
 
-fn topological_sort<N: NodeTraits>(graph: &Graph<N>, u: N) -> Vec<N> {
-    let mut processed: HashMap<N, bool> = HashMap::new();
+fn topological_sort<'a, N: NodeTraits>(graph: &'a Graph<N>, u: &'a N) -> Vec<&'a N> {
+    let mut processed: HashMap<&N, bool> = HashMap::new();
 
-    let mut rev_order: Vec<N> = Vec::new();
+    let mut rev_order: Vec<&N> = Vec::new();
 
     topo_rec(graph, u, &mut processed, &mut rev_order);
 
@@ -43,14 +44,14 @@ fn topological_sort<N: NodeTraits>(graph: &Graph<N>, u: N) -> Vec<N> {
     rev_order
 }
 
-fn topo_rec<N: NodeTraits>(
-    graph: &Graph<N>,
-    u: N,
-    mut processed: &mut HashMap<N, bool>,
-    mut rev_order: &mut Vec<N>,
+fn topo_rec<'a, N: NodeTraits>(
+    graph: &'a Graph<N>,
+    u: &'a N,
+    mut processed: &mut HashMap<&'a N, bool>,
+    mut rev_order: &mut Vec<&'a N>,
 ) {
     let processed_node = *processed
-        .entry(u.clone())
+        .entry(u)
         .and_modify(|p| {
             if !*p {
                 panic!("Loop detected.")
@@ -59,14 +60,14 @@ fn topo_rec<N: NodeTraits>(
         .or_insert(false);
 
     if !processed_node {
-        if let Some(succs) = graph.succs(&u) {
+        if let Some(succs) = graph.succs(u) {
             for v in succs {
-                topo_rec(graph, v.clone(), &mut processed, &mut rev_order);
+                topo_rec(graph, v, &mut processed, &mut rev_order);
             }
         }
 
         // finished processing
-        processed.insert(u.clone(), true);
+        processed.insert(u, true);
 
         rev_order.push(u);
     }
