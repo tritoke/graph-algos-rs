@@ -15,57 +15,30 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::collections::{HashMap,BinaryHeap};
-use graph_algos::{NodeTraits, WeightedGraph};
+use graph_algos::{EdgeWeight, Graph, NodeBounds, Path, PredMap};
+use std::collections::{BinaryHeap, HashMap};
 
 fn main() {
-    let mut graph: WeightedGraph<String> = WeightedGraph::empty();
-
-    graph.fill_from_str(include_str!("../inputs/graph_3.in"));
+    let mut graph: Graph<String> = include_str!("../inputs/graph_3.in").parse().unwrap();
 
     // get references into the graph for the start and end node.
-    let start = graph.node("a".into()).unwrap();
-    let end = graph.node("e".into()).unwrap();
+    let start = graph.nodes().find(|&node| node == "a").unwrap();
+    let end = graph.nodes().find(|&node| node == "e").unwrap();
 
-    let (p, d) = dijkstra(&graph, start);
-    let path = get_path(&p, end);
+    let (pred_map, dist_map) = dijkstra(&graph, start);
+    let path = Path::new_path_to(&pred_map, end).unwrap();
 
     println!(
         "Node {:?} is distance {} from Node {:?}",
-        start, d[end], end
+        start, dist_map[end], end
     );
-    let mut pathstr = format!("{:?}", start);
 
-    // iterate over pairs in the path
-    for (u, v) in path.iter().zip(path.iter().skip(1)) {
-        pathstr.push_str(&format!(" --({})-> {:?}", graph.weight((*u, *v)), *v));
-    }
-
-    println!("Path taken: {}", pathstr);
+    println!("Path taken: {}", path);
 }
 
-fn dijkstra<'a, N: NodeTraits>(
-    graph: &'a WeightedGraph<N>,
+fn dijkstra<'a, N: NodeBounds>(
+    graph: &'a Graph<N>,
     s: &'a N,
-) -> (HashMap<&'a N, &'a N>, HashMap<&'a N, f64>) {
+) -> (PredMap<'a, N>, HashMap<&'a N, EdgeWeight>) {
     unimplemented!()
-}
-
-/// extracts a path from the predecessor map and an end node
-fn get_path<'a, N: NodeTraits>(pred_map: &HashMap<&'a N, &'a N>, end_node: &'a N) -> Vec<&'a N> {
-    let mut rev_path = vec![end_node];
-    let mut next_node: &N = end_node;
-
-    while let Some(u) = pred_map.get(next_node) {
-        if *u != next_node {
-            next_node = u;
-            rev_path.push(u);
-        } else {
-            break;
-        }
-    }
-
-    rev_path.reverse();
-
-    rev_path
 }

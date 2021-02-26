@@ -15,65 +15,46 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use graph_algos::{Graph, NodeBounds, Path, PredMap};
 use std::collections::{HashMap, HashSet, VecDeque};
-use graph_algos::{Graph, NodeTraits};
 
 fn main() {
-    let mut graph: Graph<u32> = Graph::empty();
-    graph.fill_from_str(include_str!("../inputs/graph_2.in"));
+    let graph: Graph<u32> = include_str!("../inputs/graph_2.in").parse().unwrap();
 
     println!("{:?}", graph);
 
-    let source = graph.node(1).unwrap();
-    let dest = graph.node(8).unwrap();
+    let source = graph.nodes().find(|&edge| edge == &1).unwrap();
+    let dest = graph.nodes().find(|&edge| edge == &8).unwrap();
 
     let pred_map = shortest_paths(&graph, source);
-    let path = get_path(&pred_map, dest);
+    let path = Path::new_path_to(&pred_map, dest).unwrap();
 
     println!("{:?}", pred_map);
-    println!("{:?}", path);
+    println!("{}", path);
 }
 
 /// returns the predecessor map, from the graph and a start node
-fn shortest_paths<'a, N: NodeTraits>(graph: &'a Graph<N>, s: &'a N) -> HashMap<&'a N, &'a N> {
+fn shortest_paths<'a, N: NodeBounds>(graph: &'a Graph<N>, s: &'a N) -> PredMap<'a, N> {
     let mut discovered: VecDeque<&N> = vec![s].into();
     let mut finished: HashSet<&N> = HashSet::new();
 
-    let mut pred_map: HashMap<&N, &N> = HashMap::new();
-    pred_map.insert(s, s);
+    let mut pred_map: PredMap<N> = HashMap::new();
+    pred_map.insert(s, (s, None));
 
     while let Some(u) = discovered.pop_front() {
         finished.insert(u);
 
         if let Some(succs) = graph.succs(&u) {
-            for v in succs.iter().filter(|v| !finished.contains(v)) {
-                pred_map.insert(v, u);
+            for edge in succs
+                .iter()
+                .filter(|edge| !finished.contains(edge.destination()))
+            {
+                pred_map.insert(edge.destination(), (u, None));
 
-                discovered.push_back(v);
+                discovered.push_back(edge.destination());
             }
         }
     }
 
     pred_map
-}
-
-/// extracts a path from the predecessor map and an end node
-fn get_path<'a, N: NodeTraits>(pred_map: &HashMap<&'a N, &'a N>, end_node: &'a N) -> Vec<&'a N> {
-    let mut rev_path = vec![end_node];
-    let mut next_node = end_node;
-
-    println!("{:?}", pred_map.get(next_node));
-
-    while let Some(u) = pred_map.get(next_node) {
-        if u != &next_node {
-            next_node = u;
-            rev_path.push(u);
-        } else {
-            break;
-        }
-    }
-
-    rev_path.reverse();
-
-    rev_path
 }

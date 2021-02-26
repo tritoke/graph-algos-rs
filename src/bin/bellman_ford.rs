@@ -16,52 +16,57 @@
  */
 
 use std::collections::HashMap;
-use graph_algos::{NodeTraits, WeightedGraph};
+
+use graph_algos::{EdgeWeight, Graph, NodeBounds, Path, PredMap};
+
+type DistMap<'a, N> = HashMap<&'a N, EdgeWeight>;
 
 fn main() {
-    let mut graph: WeightedGraph<String> = WeightedGraph::empty();
+    let graph: Graph<String> = include_str!("../inputs/graph_3.in").parse().unwrap();
 
-    graph.fill_from_str(include_str!("../inputs/graph_3.in"));
+    let start = graph.nodes().find(|&node| node == "a").unwrap();
+    let end = graph.nodes().find(|&node| node == "e").unwrap();
 
-    let start = graph.node("a".into()).unwrap();
-    let end = graph.node("e".into()).unwrap();
-
-    let (p, d) = bellman_ford(&graph, start);
-    let path = get_path(&p, end);
+    let (pred_map, dist_map) = bellman_ford(&graph, start);
 
     println!(
         "Node {:?} is distance {} from Node {:?}",
-        start, d[end], end
+        start, dist_map[end], end
     );
-    let mut pathstr = format!("{:?}", start);
 
-    // iterate over pairs in the path
-    for (u, v) in path.iter().zip(path.iter().skip(1)) {
-        pathstr.push_str(&format!(" --({})-> {:?}", graph.weight((*u, *v)), *v));
-    }
-
-    println!("Path taken: {}", pathstr);
+    let path: Path<String> = Path::new_path_to(&pred_map, end).unwrap();
+    println!("{}", path);
 }
 
-fn bellman_ford<'a, N: NodeTraits>(
-    graph: &'a WeightedGraph<N>,
+fn bellman_ford<'a, N: NodeBounds>(
+    graph: &'a Graph<N>,
     s: &'a N,
-) -> (HashMap<&'a N, &'a N>, HashMap<&'a N, f64>) {
-    let mut pred_map: HashMap<&'a N, &'a N> = HashMap::new();
-    let mut dist_map: HashMap<&'a N, f64> =
-        graph.nodes().map(|node| (node, f64::INFINITY)).collect();
+) -> (PredMap<'a, N>, HashMap<&'a N, EdgeWeight>) {
+    let mut pred_map: PredMap<N> = Default::default();
+    let mut dist_map: DistMap<N> = graph
+        .nodes()
+        .map(|node| (node, EdgeWeight::infinity()))
+        .collect();
 
-    dist_map.insert(s, 0.0);
+    // insert pred map self link
+    pred_map.insert(s, (s, Some(0.into())));
+
+    // assert origin is distance 0 from itself
+    dist_map.insert(s, 0.into());
 
     // loop until a round changes nothing
     let nodes = graph.len();
     for _ in 0..nodes - 1 {
         let mut changed = false;
         // perform relaxation
-        for ((u, v), w) in graph.weights() {
-            if dist_map[u] + w < dist_map[v] {
-                dist_map.insert(v, dist_map[u] + w);
-                pred_map.insert(v, u);
+        for (u, edge) in graph.edges() {
+            // bellman ford requires weights so a graph without weights is malformed
+            let w = edge.weight().expect("No weight for this edge, panicking");
+            let v = edge.destination();
+
+            if dist_map[u] + *w < dist_map[v] {
+                dist_map.insert(v, dist_map[u] + *w);
+                pred_map.insert(v, (u, Some(*w)));
                 changed = true;
             }
         }
@@ -73,23 +78,4 @@ fn bellman_ford<'a, N: NodeTraits>(
     }
 
     (pred_map, dist_map)
-}
-
-/// extracts a path from the predecessor map and an end node
-fn get_path<'a, N: NodeTraits>(pred_map: &HashMap<&'a N, &'a N>, end_node: &'a N) -> Vec<&'a N> {
-    let mut rev_path = vec![end_node];
-    let mut next_node: &N = end_node;
-
-    while let Some(u) = pred_map.get(next_node) {
-        if *u != next_node {
-            next_node = u;
-            rev_path.push(u);
-        } else {
-            break;
-        }
-    }
-
-    rev_path.reverse();
-
-    rev_path
 }

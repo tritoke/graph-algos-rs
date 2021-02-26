@@ -15,16 +15,14 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use graph_algos::{Graph, NodeBounds};
 use std::collections::HashMap;
-use graph_algos::{Graph, NodeTraits};
 
 fn main() {
-    let mut graph: Graph<u32> = Graph::empty();
-
-    graph.fill_from_str(include_str!("../inputs/graph_1.in"));
+    let graph: Graph<u32> = include_str!("../inputs/graph_1.in").parse().unwrap();
 
     // sort from node 1
-    let source = graph.node(1).unwrap();
+    let source = graph.nodes().find(|&node| node == &1).unwrap();
     let sorted = topological_sort(&graph, source);
 
     println!("{:?}", graph);
@@ -32,7 +30,7 @@ fn main() {
     println!("{:?}", sorted);
 }
 
-fn topological_sort<'a, N: NodeTraits>(graph: &'a Graph<N>, u: &'a N) -> Vec<&'a N> {
+fn topological_sort<'a, N: NodeBounds>(graph: &'a Graph<N>, u: &'a N) -> Vec<&'a N> {
     let mut processed: HashMap<&N, bool> = HashMap::new();
 
     let mut rev_order: Vec<&N> = Vec::new();
@@ -44,7 +42,7 @@ fn topological_sort<'a, N: NodeTraits>(graph: &'a Graph<N>, u: &'a N) -> Vec<&'a
     rev_order
 }
 
-fn topo_rec<'a, N: NodeTraits>(
+fn topo_rec<'a, N: NodeBounds>(
     graph: &'a Graph<N>,
     u: &'a N,
     mut processed: &mut HashMap<&'a N, bool>,
@@ -61,8 +59,8 @@ fn topo_rec<'a, N: NodeTraits>(
 
     if !processed_node {
         if let Some(succs) = graph.succs(u) {
-            for v in succs {
-                topo_rec(graph, v, &mut processed, &mut rev_order);
+            for edge in succs {
+                topo_rec(graph, edge.destination(), &mut processed, &mut rev_order);
             }
         }
 

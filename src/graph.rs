@@ -20,39 +20,39 @@ use std::collections::{hash_map, HashMap};
 // Trait imports
 use std::{fmt::Debug, hash::Hash, str::FromStr};
 
-pub trait NodeTraits: Hash + FromStr<Err: Debug> + Debug + Eq + Clone {}
-impl<T: Hash + FromStr<Err: Debug> + Debug + Eq + Clone> NodeTraits for T {}
+use crate::{Edge, ParseEdgeError};
 
+/// A trait to represent all of the bounds that a node in the graph must provide
+pub trait NodeBounds: Hash + FromStr<Err: Debug> + Debug + Eq + Clone {}
+impl<T: Hash + FromStr<Err: Debug> + Debug + Eq + Clone> NodeBounds for T {}
+
+/// A node-generic graph type implemented using an adjacency list
+/// Where the successors of a node are stored in a hashmap.
 #[derive(Debug)]
-pub struct Graph<N>
-where
-    N: NodeTraits,
-{
+pub struct Graph<N: NodeBounds> {
     /// the graph is backed by a hashmap from a node to a vector of nodes
-    pub(super) backing_map: HashMap<N, Vec<N>>,
+    backing_map: HashMap<N, Vec<Edge<N>>>,
 }
 
-impl<N: NodeTraits> Graph<N> {
+impl<N: NodeBounds> Graph<N> {
     /// creates a new empty graph
     pub fn empty() -> Self {
-        Self {
-            backing_map: HashMap::new(),
-        }
+        Default::default()
     }
 
     /// adds and edge to the graph
-    pub fn add_edge(&mut self, u: N, v: N) {
+    pub fn add_edge(&mut self, u: N, e: Edge<N>) {
         self.backing_map
-            .entry(u)
-            .or_insert_with(Vec::new)
-            .push(v.clone());
-        self.backing_map.entry(v).or_insert_with(Vec::new);
+            .entry(e.destination().clone())
+            .or_insert_with(Vec::new);
+
+        self.backing_map.entry(u).or_insert_with(Vec::new).push(e);
     }
 
     /// removes and edge from the graph
     pub fn remove_edge(&mut self, u: &N, v: &N) {
         if let Some(edges) = self.backing_map.get_mut(u) {
-            if let Some(pos) = edges.iter().position(|e| *e == *v) {
+            if let Some(pos) = edges.iter().position(|e| e.destination() == v) {
                 edges.remove(pos);
             }
         }
@@ -61,120 +61,137 @@ impl<N: NodeTraits> Graph<N> {
     /// Returns whether an edge exists in the graph
     pub fn is_edge(&self, u: &N, v: &N) -> bool {
         if let Some(succs) = self.backing_map.get(u) {
-            succs.contains(v)
+            succs.iter().find(|edge| edge.destination() == v).is_some()
         } else {
             false
         }
     }
 
     /// Returns the successors of a node in the graph
-    pub fn succs(&self, u: &N) -> Option<&[N]> {
-        self.backing_map.get(u).map(|succs| succs.as_slice())
+    pub fn succs(&self, u: &N) -> Option<&[Edge<N>]> {
+        self.backing_map.get(u).map(|vec| vec.as_slice())
     }
 
     /// Returns the number of nodes in a graph
-    #[inline]
     pub fn len(&self) -> usize {
         self.backing_map.len()
     }
 
     /// Returns whether the graph is empty
-    #[inline]
     pub fn is_empty(&self) -> bool {
         self.backing_map.is_empty()
     }
 
-    /// Returns a reference to a node in the graph
-    pub fn node(&self, needle: N) -> Option<&N> {
-        self.backing_map.keys().find(|&key| *key == needle)
-    }
-
     /// Returns an iterator over the nodes in a graph
-    pub fn nodes(&self) -> Nodes<N> {
+    pub fn nodes(&self) -> Nodes<'_, N> {
         Nodes {
             inner: self.backing_map.keys(),
         }
     }
 
     /// Returns an iterator over the edges in the graph
-    pub fn edges(&self) -> Edges<N> {
+    pub fn edges(&self) -> Edges<'_, N> {
         Edges {
             inner: self.backing_map.iter(),
             curr_node: None,
             curr_dest_no: 0,
         }
     }
+}
 
-    /// fill an unweighted directed graph from a string
-    /// each line is node:edges seperated by spaces
-    pub fn fill_from_str(&mut self, s: &str) {
-        // the first node added to the graph
-        for line in s.lines() {
-            let (u, vs) = line.split_once(':').expect("Invalid graph format.");
-
-            let u_fs: N = u.parse().expect("Failed to parse origin node.");
-
-            let vs_fs = vs
-                .split(' ')
-                .map(|v| v.parse().expect("Failed to parse destination node."));
-
-            for v in vs_fs {
-                self.add_edge(u_fs.clone(), v);
-            }
+impl<N: NodeBounds> Default for Graph<N> {
+    fn default() -> Self {
+        Self {
+            backing_map: HashMap::new(),
         }
     }
 }
 
-/// An iterator over the nodes of the graph
+/// represents the failure to parse a node
+#[derive(Fail, Debug)]
+pub enum GraphParseError {
+    /// Represents the failure to parse an outbound edge
+    #[fail(display = "Failed to parse outbound edge: {}", _0)]
+    EdgeParseError(#[fail(cause)] ParseEdgeError),
 
-pub struct Nodes<'a, N>
-where
-    N: NodeTraits,
-{
-    inner: hash_map::Keys<'a, N, Vec<N>>,
+    /// Represents the failure to parse the destination node in an edge
+    #[fail(display = "Failed to parse source node: {}", _0)]
+    NodeParseError(String),
+
+    #[fail(display = "Error in graph format.")]
+    FormatError,
 }
 
-impl<'a, N> Iterator for Nodes<'a, N>
-where
-    N: NodeTraits,
-{
+impl<N: NodeBounds> FromStr for Graph<N> {
+    type Err = GraphParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // fill an unweighted directed graph from a string
+        // each line is node:edges seperated by spaces
+
+        // new empty graph
+        let mut graph: Graph<N> = Default::default();
+
+        for line in s.lines() {
+            let (u, edges) = line.split_once(':').ok_or(GraphParseError::FormatError)?;
+
+            let u_fs: N = u
+                .parse()
+                .map_err(|err| GraphParseError::NodeParseError(format!("{:?}", err)))?;
+
+            let edges = edges
+                .split(' ')
+                .map(|edge| edge.parse().map_err(GraphParseError::EdgeParseError));
+
+            for edge in edges {
+                let e = edge?;
+                graph.add_edge(u_fs.clone(), e);
+            }
+        }
+
+        Ok(graph)
+    }
+}
+
+/// An iterator over the nodes of the graph
+#[derive(Debug)]
+pub struct Nodes<'a, N: NodeBounds> {
+    inner: hash_map::Keys<'a, N, Vec<Edge<N>>>,
+}
+
+impl<'a, N: NodeBounds> Iterator for Nodes<'a, N> {
     type Item = &'a N;
 
-    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         self.inner.next()
     }
 
-    #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.inner.size_hint()
     }
 }
 
 /// An iterator over the Edges of the graph
-pub struct Edges<'a, N>
-where
-    N: NodeTraits,
-{
-    inner: hash_map::Iter<'a, N, Vec<N>>,
-    curr_node: Option<(&'a N, &'a Vec<N>)>,
+#[derive(Debug)]
+pub struct Edges<'a, N: NodeBounds> {
+    inner: hash_map::Iter<'a, N, Vec<Edge<N>>>,
+    curr_node: Option<(&'a N, &'a Vec<Edge<N>>)>,
     curr_dest_no: usize,
 }
 
-impl<'a, N> Iterator for Edges<'a, N>
-where
-    N: NodeTraits,
-{
-    type Item = (&'a N, &'a N);
+impl<'a, N: NodeBounds> Iterator for Edges<'a, N> {
+    type Item = (&'a N, &'a Edge<N>);
 
     fn next(&mut self) -> Option<Self::Item> {
         // loop until we get an edge or until there are none left
         loop {
             match self.curr_node {
                 // we have a node and enough remaining dests
-                Some((node, dests)) if dests.len() < self.curr_dest_no => {
-                    break Some((node, &dests[self.curr_dest_no]));
+                Some((node, dests)) if self.curr_dest_no < dests.len() => {
+                    self.curr_dest_no += 1;
+                    break Some((node, &dests[self.curr_dest_no - 1]));
                 }
+
                 // get next thing from inner iterator
                 _ => {
                     if let Some(node) = self.inner.next() {
