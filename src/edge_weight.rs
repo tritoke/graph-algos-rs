@@ -19,38 +19,64 @@ use std::{cmp::Ordering, fmt, ops};
 
 /// A wrapper around i64 to handle the different options
 /// for the weight of an edge.
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
 pub enum EdgeWeight {
     /// Weight(value) represents an edge of weight value
     Weight(i64),
 
-    /// PosInfinity represents one of +infinity
+    /// PosInfinity represents a weight of +infinity
     PosInfinity,
 
-    /// NegInfinity represents one of -infinity
+    /// NegInfinity represents a weight of -infinity
     NegInfinity,
 }
 
 impl EdgeWeight {
     /// Create a new EdgeWeight with a given weight
+    /// ```
+    /// use graph_algos::EdgeWeight;
+    ///
+    /// let w = EdgeWeight::new(5);
+    /// assert_eq!(w, EdgeWeight::Weight(5_i64));
+    /// ```
     pub fn new(weight: i64) -> Self {
         Self::Weight(weight)
     }
 
     /// reuturns positive infinity
+    /// ```
+    /// use graph_algos::EdgeWeight;
+    ///
+    /// let inf = EdgeWeight::infinity();
+    /// assert_eq!(inf, EdgeWeight::PosInfinity);
+    /// ```
     pub fn infinity() -> Self {
         Self::PosInfinity
     }
 
     /// reuturns negative infinity
+    /// ```
+    /// use graph_algos::EdgeWeight;
+    ///
+    /// let neg_inf = EdgeWeight::neg_infinity();
+    /// assert_eq!(neg_inf, EdgeWeight::NegInfinity);
+    /// ```
     pub fn neg_infinity() -> Self {
         Self::NegInfinity
     }
 
     /// Inverts the sign of the contained weight and returns the new weight
-    /// +inf -> -inf
-    /// -inf -> +inf
-    ///   -5 -> +5
+    /// ```
+    /// use graph_algos::EdgeWeight;
+    ///
+    /// let neg_inf = EdgeWeight::neg_infinity();
+    /// let inf = EdgeWeight::infinity();
+    /// let w = EdgeWeight::Weight(5);
+    ///
+    /// assert_eq!(neg_inf.flip_sign(), inf);
+    /// assert_eq!(inf.flip_sign(), neg_inf);
+    /// assert_eq!(w.flip_sign(), EdgeWeight::Weight(-5));
+    /// ```
     pub fn flip_sign(&self) -> Self {
         match self {
             Self::Weight(w) => Self::Weight(-1 * w),

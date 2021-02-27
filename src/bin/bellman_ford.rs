@@ -17,7 +17,7 @@
 
 use std::collections::HashMap;
 
-use graph_algos::{EdgeWeight, Graph, NodeBounds, Path, PredMap};
+use graph_algos::{Graph, NodeBounds, Edge, EdgeWeight, Path, PredMap};
 
 type DistMap<'a, N> = HashMap<&'a N, EdgeWeight>;
 
@@ -49,7 +49,7 @@ fn bellman_ford<'a, N: NodeBounds>(
         .collect();
 
     // insert pred map self link
-    pred_map.insert(s, (s, Some(0.into())));
+    pred_map.insert(s, Edge::new_with_weight(s, 0));
 
     // assert origin is distance 0 from itself
     dist_map.insert(s, 0.into());
@@ -64,9 +64,9 @@ fn bellman_ford<'a, N: NodeBounds>(
             let w = edge.weight().expect("No weight for this edge, panicking");
             let v = edge.destination();
 
-            if dist_map[u] + *w < dist_map[v] {
-                dist_map.insert(v, dist_map[u] + *w);
-                pred_map.insert(v, (u, Some(*w)));
+            if dist_map[u] + w < dist_map[v] {
+                dist_map.insert(v, dist_map[u] + w);
+                pred_map.insert(v, Edge::new_with_weight(v, w));
                 changed = true;
             }
         }

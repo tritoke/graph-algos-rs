@@ -15,10 +15,11 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use std::{fmt::Debug, str::FromStr};
 use crate::{EdgeWeight, NodeBounds};
 
 /// An Edge in the graph
-#[derive(Debug)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq, Ord, PartialOrd)]
 pub struct Edge<N: NodeBounds> {
     /// The destination node of the edge
     destination: N,
@@ -30,24 +31,58 @@ pub struct Edge<N: NodeBounds> {
 }
 
 impl<N: NodeBounds> Edge<N> {
-    /// Returns a reference to the weight of an edge if it exists
-    pub fn weight(&self) -> Option<&EdgeWeight> {
-        self.weight.as_ref()
+    /// Construct a new Edge with no weight
+    /// ```
+    /// use graph_algos::Edge;
+    ///
+    /// let edge = Edge::new(5);
+    /// assert_eq!(edge.destination(), &5);
+    /// assert!(edge.weight().is_none());
+    /// ```
+    pub fn new(dest: N) -> Self {
+        Self {
+            destination: dest,
+            weight: None,
+        }
+    }
+
+    /// Construct a new Edge with a given weight
+    /// ```
+    /// use graph_algos::Edge;
+    ///
+    /// let edge = Edge::new_with_weight(5, 10);
+    /// assert_eq!(edge.destination(), &5);
+    /// assert_eq!(edge.weight(), Some(10.into()));
+    /// ```
+    pub fn new_with_weight(dest: N, weight: impl std::convert::Into<EdgeWeight>) -> Self {
+        Self {
+            destination: dest,
+            weight: Some(weight.into()),
+        }
+    }
+
+    /// Returns the weight of an edge if it exists
+    /// ```
+    /// use graph_algos::Edge;
+    ///
+    /// let edge = Edge::new_with_weight(5, 10);
+    /// assert_eq!(edge.weight(), Some(10.into()));
+    /// ```
+    pub fn weight(&self) -> Option<EdgeWeight> {
+        self.weight
     }
 
     /// Returns a reference to the destination node of the edge
+    /// ```
+    /// use graph_algos::Edge;
+    ///
+    /// let edge = Edge::new(5);
+    /// assert_eq!(edge.destination(), &5);
+    /// ```
     pub fn destination(&self) -> &N {
         &self.destination
     }
 }
-
-impl<N: NodeBounds> PartialEq for Edge<N> {
-    fn eq(&self, other: &Self) -> bool {
-        self.destination() == other.destination()
-    }
-}
-
-impl<N: NodeBounds> Eq for Edge<N> {}
 
 /// represents the failure to parse an edge
 #[derive(Fail, Debug)]
@@ -61,7 +96,7 @@ pub enum ParseEdgeError {
     NodeParseError(String),
 }
 
-impl<N: NodeBounds> std::str::FromStr for Edge<N> {
+impl<N: NodeBounds + FromStr<Err: Debug>> FromStr for Edge<N> {
     type Err = ParseEdgeError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -71,20 +106,15 @@ impl<N: NodeBounds> std::str::FromStr for Edge<N> {
             let destination = v
                 .parse()
                 .map_err(|err| ParseEdgeError::NodeParseError(format!("{:?}", err)))?;
-            let weight = w.parse().map_err(ParseEdgeError::WeightParseError)?;
+            let weight: i64 = w.parse().map_err(ParseEdgeError::WeightParseError)?;
 
-            Ok(Edge {
-                destination,
-                weight: Some(weight),
-            })
+            Ok(Edge::new_with_weight(destination, weight))
         } else {
             let destination = s
                 .parse()
                 .map_err(|err| ParseEdgeError::NodeParseError(format!("{:?}", err)))?;
-            Ok(Edge {
-                destination,
-                weight: None,
-            })
+
+            Ok(Edge::new(destination))
         }
     }
 }

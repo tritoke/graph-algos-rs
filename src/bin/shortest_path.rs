@@ -15,7 +15,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use graph_algos::{Graph, NodeBounds, Path, PredMap};
+use graph_algos::{Graph, NodeBounds, Edge, Path, PredMap};
 use std::collections::{HashMap, HashSet, VecDeque};
 
 fn main() {
@@ -39,7 +39,7 @@ fn shortest_paths<'a, N: NodeBounds>(graph: &'a Graph<N>, s: &'a N) -> PredMap<'
     let mut finished: HashSet<&N> = HashSet::new();
 
     let mut pred_map: PredMap<N> = HashMap::new();
-    pred_map.insert(s, (s, None));
+    pred_map.insert(s, Edge::new(s));
 
     while let Some(u) = discovered.pop_front() {
         finished.insert(u);
@@ -49,7 +49,7 @@ fn shortest_paths<'a, N: NodeBounds>(graph: &'a Graph<N>, s: &'a N) -> PredMap<'
                 .iter()
                 .filter(|edge| !finished.contains(edge.destination()))
             {
-                pred_map.insert(edge.destination(), (u, None));
+                pred_map.insert(edge.destination(), Edge::new(u));
 
                 discovered.push_back(edge.destination());
             }

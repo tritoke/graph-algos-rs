@@ -18,19 +18,21 @@
 #![feature(associated_type_bounds, str_split_once)]
 #![warn(missing_debug_implementations, rust_2018_idioms, missing_docs)]
 
-/*!
+/**
 Graph library which provides an adjacency list based directed graph.
 
 # Example
 ```
-let mut graph: Graph<u32> = Graph::new();
+use graph_algos::{Graph, Edge};
+
+let mut graph: Graph<u32> = Graph::empty();
 
 // add an edge from node 0 to node one with a weight of 5
-graph.add_edge(0, (1, Some(5.into())));
+graph.add_edge(0, Edge::new_with_weight(1, 5));
 
 // add two more edges
-graph.add_edge(0, (2, Some(2.into())));
-graph.add_edge(2, (1, Some(1.into())));
+graph.add_edge(0, Edge::new_with_weight(2, 2));
+graph.add_edge(2, Edge::new_with_weight(1, 1));
 
 if graph.is_edge(&0, &1) {
     println!("There is an edge from node 0 to node 1");
@@ -56,3 +58,5 @@ pub use edge_weight::EdgeWeight;
 
 mod path;
 pub use path::{Path, PredMap};
+
+//#[macro_export]

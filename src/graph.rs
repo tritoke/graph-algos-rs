@@ -23,12 +23,12 @@ use std::{fmt::Debug, hash::Hash, str::FromStr};
 use crate::{Edge, ParseEdgeError};
 
 /// A trait to represent all of the bounds that a node in the graph must provide
-pub trait NodeBounds: Hash + FromStr<Err: Debug> + Debug + Eq + Clone {}
-impl<T: Hash + FromStr<Err: Debug> + Debug + Eq + Clone> NodeBounds for T {}
+pub trait NodeBounds: Hash + Debug + Eq + Clone {}
+impl<T: Hash + Debug + Eq + Clone> NodeBounds for T {}
 
 /// A node-generic graph type implemented using an adjacency list
 /// Where the successors of a node are stored in a hashmap.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Graph<N: NodeBounds> {
     /// the graph is backed by a hashmap from a node to a vector of nodes
     backing_map: HashMap<N, Vec<Edge<N>>>,
@@ -36,11 +36,30 @@ pub struct Graph<N: NodeBounds> {
 
 impl<N: NodeBounds> Graph<N> {
     /// creates a new empty graph
+    /// ```
+    /// use graph_algos::Graph;
+    ///
+    /// let graph: Graph<u32> = Graph::empty();
+    ///
+    /// assert!(graph.is_empty());
+    /// ```
     pub fn empty() -> Self {
         Default::default()
     }
 
     /// adds and edge to the graph
+    /// ```
+    /// use graph_algos::{Graph, Edge};
+    ///
+    /// let mut graph: Graph<u32> = Graph::empty();
+    /// assert!(graph.is_empty());
+    ///
+    /// graph.add_edge(5, Edge::new(6));
+    /// assert!(!graph.is_empty());
+    /// // we now have 2 nodes in the graph
+    /// assert_eq!(graph.len(), 2);
+    /// assert!(graph.is_edge(&5, &6));
+    /// ```
     pub fn add_edge(&mut self, u: N, e: Edge<N>) {
         self.backing_map
             .entry(e.destination().clone())
@@ -50,6 +69,25 @@ impl<N: NodeBounds> Graph<N> {
     }
 
     /// removes and edge from the graph
+    /// ```
+    /// use graph_algos::{Graph, Edge};
+    ///
+    /// let mut graph: Graph<u32> = [
+    ///     (5_u32, Edge::new(6_u32)),
+    ///     (6_u32, Edge::new(7_u32)),
+    ///     (7_u32, Edge::new(8_u32)),
+    ///     (8_u32, Edge::new(5_u32)),
+    /// ].iter().cloned().collect();
+    ///
+    /// assert_eq!(graph.len(), 4);
+    /// assert!(graph.is_edge(&5, &6));
+    ///
+    /// graph.remove_edge(&5, &6);
+    /// assert!(!graph.is_edge(&5, &6));
+    ///
+    /// assert_eq!(graph.len(), 4);
+    ///
+    /// ```
     pub fn remove_edge(&mut self, u: &N, v: &N) {
         if let Some(edges) = self.backing_map.get_mut(u) {
             if let Some(pos) = edges.iter().position(|e| e.destination() == v) {
@@ -59,6 +97,14 @@ impl<N: NodeBounds> Graph<N> {
     }
 
     /// Returns whether an edge exists in the graph
+    /// ```
+    /// use graph_algos::{Graph, Edge};
+    ///
+    /// let mut graph: Graph<u32> = Graph::empty();
+    ///
+    /// graph.add_edge(5, Edge::new(6));
+    /// assert!(graph.is_edge(&5, &6));
+    /// ```
     pub fn is_edge(&self, u: &N, v: &N) -> bool {
         if let Some(succs) = self.backing_map.get(u) {
             succs.iter().find(|edge| edge.destination() == v).is_some()
@@ -68,21 +114,72 @@ impl<N: NodeBounds> Graph<N> {
     }
 
     /// Returns the successors of a node in the graph
+    /// ```
+    /// use graph_algos::{Graph, Edge};
+    ///
+    /// let graph: Graph<u32> = [
+    ///     (5_u32, Edge::new(6_u32)),
+    ///     (5_u32, Edge::new(7_u32)),
+    ///     (5_u32, Edge::new(8_u32)),
+    ///     (5_u32, Edge::new(9_u32)),
+    /// ].iter().cloned().collect();
+    ///
+    /// let correct = [6, 7, 8, 9].iter().map(|edge| Edge::new(*edge)).collect::<Vec<_>>();
+    ///
+    /// assert!(correct.eq(graph.succs(&5).unwrap()));
+    /// ```
     pub fn succs(&self, u: &N) -> Option<&[Edge<N>]> {
         self.backing_map.get(u).map(|vec| vec.as_slice())
     }
 
     /// Returns the number of nodes in a graph
+    /// ```
+    /// use graph_algos::{Graph, Edge};
+    ///
+    /// let graph: Graph<u32> = [
+    ///     (5_u32, Edge::new(6_u32)),
+    ///     (5_u32, Edge::new(7_u32)),
+    ///     (5_u32, Edge::new(8_u32)),
+    ///     (5_u32, Edge::new(9_u32)),
+    /// ].iter().cloned().collect();
+    ///
+    /// assert_eq!(graph.len(), 5);
+    /// ```
     pub fn len(&self) -> usize {
         self.backing_map.len()
     }
 
     /// Returns whether the graph is empty
+    /// ```
+    /// use graph_algos::{Graph, Edge};
+    ///
+    /// let mut graph: Graph<u32> = Graph::empty();
+    /// assert!(graph.is_empty());
+    ///
+    /// graph.add_edge(5, Edge::new(6));
+    /// assert!(!graph.is_empty());
+    /// ```
     pub fn is_empty(&self) -> bool {
         self.backing_map.is_empty()
     }
 
     /// Returns an iterator over the nodes in a graph
+    /// ```
+    /// use graph_algos::{Graph, Edge};
+    ///
+    /// let graph: Graph<u32> = [
+    ///     (5_u32, Edge::new(6_u32)),
+    ///     (5_u32, Edge::new(7_u32)),
+    ///     (5_u32, Edge::new(8_u32)),
+    ///     (5_u32, Edge::new(9_u32)),
+    /// ].iter().cloned().collect();
+    ///
+    /// let correct: Vec<&u32> = [5, 6, 7, 8, 9].iter().collect();
+    /// let mut nodes: Vec<&u32> = graph.nodes().collect();
+    /// nodes.sort();
+    ///
+    /// assert_eq!(nodes, correct);
+    /// ```
     pub fn nodes(&self) -> Nodes<'_, N> {
         Nodes {
             inner: self.backing_map.keys(),
@@ -90,6 +187,28 @@ impl<N: NodeBounds> Graph<N> {
     }
 
     /// Returns an iterator over the edges in the graph
+    /// ```
+    /// use graph_algos::{Graph, Edge};
+    ///
+    /// let graph: Graph<u32> = [
+    ///     (5_u32, Edge::new(6_u32)),
+    ///     (5_u32, Edge::new(7_u32)),
+    ///     (5_u32, Edge::new(8_u32)),
+    ///     (5_u32, Edge::new(9_u32)),
+    /// ].iter().cloned().collect();
+    ///
+    /// let correct: Vec<(u32, Edge<u32>)> = vec![
+    ///     (5, Edge::new(6)),
+    ///     (5, Edge::new(7)),
+    ///     (5, Edge::new(8)),
+    ///     (5, Edge::new(9)),
+    /// ];
+    ///
+    /// let mut edges: Vec<(u32, Edge<u32>)> = graph.edges().map(|(a, b)| (a.clone(), b.clone())).collect();
+    /// edges.sort();
+    ///
+    /// assert!(correct.iter().eq(edges.iter()));
+    /// ```
     pub fn edges(&self) -> Edges<'_, N> {
         Edges {
             inner: self.backing_map.iter(),
@@ -122,7 +241,7 @@ pub enum GraphParseError {
     FormatError,
 }
 
-impl<N: NodeBounds> FromStr for Graph<N> {
+impl<N: NodeBounds + FromStr<Err: Debug>> FromStr for Graph<N> {
     type Err = GraphParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -214,5 +333,17 @@ impl<'a, N: NodeBounds> Iterator for Edges<'a, N> {
         } else {
             (0, None)
         }
+    }
+}
+
+impl<N: NodeBounds> std::iter::FromIterator<(N, Edge<N>)> for Graph<N> {
+    fn from_iter<I: IntoIterator<Item = (N, Edge<N>)>>(iter: I) -> Self {
+        let mut graph: Graph<N> = Graph::empty();
+
+        for (src, edge) in iter {
+            graph.add_edge(src, edge);
+        }
+
+        graph
     }
 }
