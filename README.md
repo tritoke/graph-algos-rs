@@ -25,7 +25,7 @@ if graph.is_edge(&0, &1) {
 ```
 
 ## Documentation
-You can build the documentation with `cargo doc`.
+You can build the documentation with `cargo doc`, and then view it with `cargo doc --open`.
 
 ## Tests
 You can run the tests with `cargo test`.
