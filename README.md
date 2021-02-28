@@ -27,6 +27,10 @@ assert_eq!(
     graph.succs(&3).map(|succs| &succs[1]),
 );
 ```
+# Building
+Any of the individual algorithms can be run with `cargo run --bin (topo_sort|shortest_path|bellman_ford|dijkstra)`.
+
+Note: Rust 1.52 is the minimum version required.
 
 ## Documentation
 You can build the documentation with `cargo doc`, and then view it with `cargo doc --open`.
