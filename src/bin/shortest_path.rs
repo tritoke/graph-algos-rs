@@ -15,21 +15,29 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use graph_algos::{Edge, Graph, NodeBounds, Path, PredMap};
+use graph_algos::{graph, Edge, Graph, NodeBounds, Path, PredMap};
 use std::collections::{HashMap, HashSet, VecDeque};
 
 fn main() {
-    let graph: Graph<u32> = include_str!("../inputs/graph_2.in").parse().unwrap();
+    // inputs/graph_2.in
+    let graph: Graph<u32> = graph! {
+        1 => [2, 3],
+        2 => [4, 5],
+        3 => [6, 7],
+        4 => [8, 9],
+        6 => [5],
+        9 => [2],
+    };
 
-    println!("{:?}", graph);
+    println!("{}", graph);
 
-    let source = graph.nodes().find(|&edge| edge == &1).unwrap();
-    let dest = graph.nodes().find(|&edge| edge == &8).unwrap();
+    let source = &1;
+    let dest = &8;
 
     let pred_map = shortest_paths(&graph, source);
     let path = Path::new_path_to(&pred_map, dest).unwrap();
 
-    println!("{:?}", pred_map);
+    println!("pred_map: {:#?}", pred_map);
     println!("{}", path);
 }
 

@@ -15,17 +15,22 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use graph_algos::{Graph, NodeBounds};
+use graph_algos::{graph, Graph, NodeBounds};
 use std::collections::HashMap;
 
 fn main() {
-    let graph: Graph<u32> = include_str!("../inputs/graph_1.in").parse().unwrap();
+    // inputs/graph_1.in
+    let graph: Graph<u32> = graph! {
+        1 => [2, 3],
+        2 => [4, 6],
+        3 => [5, 6],
+        5 => [6],
+    };
 
     // sort from node 1
-    let source = graph.nodes().find(|&node| node == &1).unwrap();
-    let sorted = topological_sort(&graph, source);
+    let sorted = topological_sort(&graph, &1);
 
-    println!("{:?}", graph);
+    println!("{}", graph);
 
     println!("{:?}", sorted);
 }

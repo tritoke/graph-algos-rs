@@ -18,9 +18,13 @@
 use std::collections::{hash_map, HashMap};
 
 // Trait imports
-use std::{fmt::Debug, hash::Hash, str::FromStr};
+use std::{
+    fmt::{self, Debug},
+    hash::Hash,
+    str::FromStr,
+};
 
-use crate::{Edge, ParseEdgeError};
+use crate::{Edge, EdgeWeight, ParseEdgeError};
 
 /// A trait to represent all of the bounds that a node in the graph must provide
 pub trait NodeBounds: Hash + Debug + Eq + Clone {}
@@ -28,10 +32,123 @@ impl<T: Hash + Debug + Eq + Clone> NodeBounds for T {}
 
 /// A node-generic graph type implemented using an adjacency list
 /// Where the successors of a node are stored in a hashmap.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Graph<N: NodeBounds> {
     /// the graph is backed by a hashmap from a node to a vector of nodes
     backing_map: HashMap<N, Vec<Edge<N>>>,
+}
+
+/// A macro to construct graphs in a more visual way
+///
+/// This can be used for unweighted graphs:
+/// ```
+/// use graph_algos::{graph, Graph};
+///
+/// // use the macro to define a graph
+/// let graph1: Graph<u32> = graph! {
+///     1 => [2, 3],
+///     2 => [4, 6],
+///     3 => [5, 6],
+///     5 => [6],
+/// };
+///
+/// // parse from a string (much nicer with include_str!)
+/// let graph2: Graph<u32> = "\
+///     1:2 3\n\
+///     2:4 6\n\
+///     3:5 6\n\
+///     5:6"
+/// .parse()
+/// .unwrap();
+///
+/// // make sure they all have the same number of nodes
+/// assert_eq!(graph1.len(), graph2.len());
+///
+/// let mut g1_nodes = graph1.nodes().collect::<Vec<_>>();
+/// let mut g2_nodes = graph2.nodes().collect::<Vec<_>>();
+///
+/// g1_nodes.sort();
+/// g2_nodes.sort();
+///
+/// // make sure they all have the same nodes
+/// assert_eq!(g1_nodes, g2_nodes);
+///
+/// let mut g1_edges = graph1.edges().collect::<Vec<_>>();
+/// let mut g2_edges = graph2.edges().collect::<Vec<_>>();
+///
+/// g1_edges.sort();
+/// g2_edges.sort();
+///
+/// // make sure they all have the same edges
+/// assert_eq!(g1_edges, g2_edges);
+/// ```
+///
+/// ... and for weighted ones:
+/// ```
+/// use graph_algos::{graph, Graph};
+///
+/// // use the macro to define a weighted graph
+/// let graph1: Graph<&str> = graph! {
+///     "a" => [ "c" => 2, "b" => 3 ],
+///     "b" => [ "e" => 6, "d" => 5 ],
+///     "c" => [ "g" => 2, "f" => 1 ],
+///     "d" => [ "i" => 2, "h" => 3 ],
+///     "e" => [ "h" => 7 ],
+///     "f" => [ "e" => 6 ],
+///     "i" => [ "b" => 4 ],
+/// };
+///
+/// // parse from a string
+/// let graph2: Graph<String> = "\
+///     a:c,2 b,3\n\
+///     b:e,6 d,5\n\
+///     c:g,2 f,1\n\
+///     d:i,2 h,3\n\
+///     e:h,7\n\
+///     f:e,6\n\
+///     i:b,4\n\
+/// "
+/// .parse()
+/// .unwrap();
+///
+/// // make sure they all have the same number of nodes
+/// assert_eq!(graph1.len(), graph2.len());
+///
+/// let mut g1_nodes = graph1.nodes().map(|node| *node).collect::<Vec<_>>();
+/// let mut g2_nodes = graph2.nodes().map(|node| node.as_str()).collect::<Vec<_>>();
+///
+/// g1_nodes.sort();
+/// g2_nodes.sort();
+///
+/// // make sure they all have the same nodes
+/// assert_eq!(g1_nodes, g2_nodes);
+///
+/// let mut g1_edges = graph1
+///     .edges()
+///     .map(|(node, edge)| (*node, *edge.destination(), edge.weight()))
+///     .collect::<Vec<_>>();
+/// let mut g2_edges = graph2
+///     .edges()
+///     .map(|(node, edge)| (node.as_str(), edge.destination().as_str(), edge.weight()))
+///     .collect::<Vec<_>>();
+///
+/// g1_edges.sort();
+/// g2_edges.sort();
+///
+/// assert_eq!(g1_edges, g2_edges);
+/// ```
+#[macro_export]
+macro_rules! graph {
+    ($($node:expr => [$($edge:expr),* $(,)*]),* $(,)*) => {{
+        let mut graph = ::graph_algos::Graph::empty();
+        $($(graph.add_edge($node, ::graph_algos::Edge::new($edge));)*)*
+        graph
+    }};
+    ($($node:expr => [$($edge:expr => $weight:expr),* $(,)*]),* $(,)*) => {{
+        let mut graph = ::graph_algos::Graph::empty();
+        $($(graph.add_edge($node, ::graph_algos::Edge::new_with_weight($edge, $weight));)*)*
+        graph
+    }};
 }
 
 impl<N: NodeBounds> Graph<N> {
@@ -215,6 +332,195 @@ impl<N: NodeBounds> Graph<N> {
             curr_node: None,
             curr_dest_no: 0,
         }
+    }
+}
+
+impl<N: NodeBounds + Ord + fmt::Display> Graph<N> {
+    /// to_string is intended to be a direct inverse of the parse method
+    /// it relies on the fmt::Display implementation for the node type
+    /// being able to produce a string which can be parsed with .parse()
+    ///
+    /// Note: this is very expensive and requires additional trait bounds.
+    /// This is because we copy the data into a BTreeMap which has an implicit
+    /// ordering and thus we will always get a consistent output.
+    /// ```
+    /// use graph_algos::{Graph, graph};
+    ///
+    /// let graph: Graph<u32> = graph! {
+    ///     1 => [2, 3],
+    ///     2 => [4, 5],
+    ///     3 => [6, 7],
+    ///     4 => [8, 9],
+    ///     6 => [5],
+    ///     9 => [2],
+    /// };
+    ///
+    /// let correct: String = "\
+    ///     1:2 3\n\
+    ///     2:4 5\n\
+    ///     3:6 7\n\
+    ///     4:8 9\n\
+    ///     6:5\n\
+    ///     9:2\n\
+    /// ".into();
+    ///
+    /// let repr = graph.to_string();
+    ///
+    /// assert_eq!(repr, correct);
+    ///
+    /// // parse back to a graph
+    /// let parsed_graph: Graph<u32> = repr.as_str().parse().unwrap();
+    ///
+    /// assert_eq!(graph, parsed_graph);
+    /// ```
+    pub fn to_string(&self) -> String {
+        let mut buf = String::new();
+
+        // collect the backing hashmap into a BTreeMap so we can read it out sorted
+        let btree_graph: std::collections::BTreeMap<_, _> = self.backing_map.iter().collect();
+
+        for (node, succs) in btree_graph.iter() {
+            if !succs.is_empty() {
+                // start the line
+                buf.push_str(format!("{}:", node).as_str());
+
+                // get an iterator over the successors
+                let mut out_it = succs.iter();
+
+                // handle the first now now so we don't get trailing spaces later
+                if let Some(first_edge) = out_it.next() {
+                    buf.push_str(format!("{}", first_edge.destination()).as_str());
+                    if let Some(EdgeWeight::Weight(w)) = first_edge.weight() {
+                        buf.push_str(format!(",{}", w).as_str());
+                    }
+                }
+
+                // handle the remaining edges
+                for edge in out_it {
+                    buf.push_str(" ");
+                    buf.push_str(format!("{}", edge.destination()).as_str());
+                    if let Some(EdgeWeight::Weight(w)) = edge.weight() {
+                        buf.push_str(format!(",{}", w).as_str());
+                    }
+                }
+
+                // end the line
+                buf.push('\n');
+            }
+        }
+
+        buf
+    }
+}
+
+impl<N: NodeBounds + Ord + fmt::Display> Graph<N> {
+    /// to_string is intended to be a direct inverse of the parse method
+    /// it relies on the fmt::Display implementation for the node type
+    /// being able to produce a string which can be parsed with `.parse()`
+    ///
+    /// Note: this is far cheaper than `to_string_sorted`, but the output is unstable.
+    /// ```
+    /// use graph_algos::{Graph, graph};
+    ///
+    /// let graph: Graph<u32> = graph! {
+    ///     1 => [2, 3],
+    ///     2 => [4, 5],
+    ///     3 => [6, 7],
+    ///     4 => [8, 9],
+    ///     6 => [5],
+    ///     9 => [2],
+    /// };
+    ///
+    /// let repr = graph.to_string_unstable();
+    ///
+    /// let correct: String = "\
+    ///     1:2 3\n\
+    ///     2:4 5\n\
+    ///     3:6 7\n\
+    ///     4:8 9\n\
+    ///     6:5\n\
+    ///     9:2\n\
+    /// ".into();
+    ///
+    /// // parse back to a graph
+    /// let parsed_graph: Graph<u32> = repr.as_str().parse().unwrap();
+    ///
+    /// assert_eq!(graph, parsed_graph);
+    /// ```
+    pub fn to_string_unstable(&self) -> String {
+        let mut buf = String::new();
+
+        for (node, succs) in self.backing_map.iter() {
+            if !succs.is_empty() {
+                // start the line
+                buf.push_str(format!("{}:", node).as_str());
+
+                // get an iterator over the successors
+                let mut out_it = succs.iter();
+
+                // handle the first now now so we don't get trailing spaces later
+                if let Some(first_edge) = out_it.next() {
+                    buf.push_str(format!("{}", first_edge.destination()).as_str());
+                    if let Some(EdgeWeight::Weight(w)) = first_edge.weight() {
+                        buf.push_str(format!(",{}", w).as_str());
+                    }
+                }
+
+                // handle the remaining edges
+                for edge in out_it {
+                    buf.push_str(" ");
+                    buf.push_str(format!("{}", edge.destination()).as_str());
+                    if let Some(EdgeWeight::Weight(w)) = edge.weight() {
+                        buf.push_str(format!(",{}", w).as_str());
+                    }
+                }
+
+                // end the line
+                buf.push('\n');
+            }
+        }
+
+        buf
+    }
+}
+
+impl<N: NodeBounds + fmt::Display> fmt::Display for Graph<N> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // the intention of this is to mimic the macro syntax
+        if self.is_empty() {
+            write!(f, "{{}}")?;
+        } else {
+            writeln!(f, "{{")?;
+            for (node, edges) in self.backing_map.iter() {
+                if edges.is_empty() {
+                    writeln!(f, "    {} => [],", node)?;
+                } else {
+                    write!(f, "    {} => [", node)?;
+                    let mut edge_it = edges.iter();
+
+                    // handle the first edge so we don't get trailing ", " later
+                    if let Some(first_edge) = edge_it.next() {
+                        write!(f, "{}", first_edge.destination())?;
+                        if let Some(EdgeWeight::Weight(w)) = first_edge.weight() {
+                            write!(f, " => {}", w)?;
+                        }
+                    }
+
+                    // write out the remaining edges
+                    for edge in edge_it.next() {
+                        write!(f, ", {}", edge.destination())?;
+                        if let Some(EdgeWeight::Weight(w)) = edge.weight() {
+                            write!(f, " => {}", w)?;
+                        }
+                    }
+
+                    writeln!(f, "],")?;
+                }
+            }
+            write!(f, "}}")?;
+        }
+
+        Ok(())
     }
 }
 

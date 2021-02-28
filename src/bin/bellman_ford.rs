@@ -17,15 +17,25 @@
 
 use std::collections::HashMap;
 
-use graph_algos::{Edge, EdgeWeight, Graph, NodeBounds, Path, PredMap};
+use graph_algos::{Edge, EdgeWeight, Graph, graph, NodeBounds, Path, PredMap};
 
 type DistMap<'a, N> = HashMap<&'a N, EdgeWeight>;
 
 fn main() {
-    let graph: Graph<String> = include_str!("../inputs/graph_3.in").parse().unwrap();
+    let graph: Graph<&str> = graph! {
+        "a" => ["c" => 2, "b" => 3],
+        "b" => ["e" => 6, "d" => 5],
+        "c" => ["g" => 2, "f" => 1],
+        "d" => ["i" => 2, "h" => 3],
+        "e" => ["h" => 7],
+        "f" => ["e" => 6],
+        "i" => ["b" => 4],
+    };
 
-    let start = graph.nodes().find(|&node| node == "a").unwrap();
-    let end = graph.nodes().find(|&node| node == "e").unwrap();
+    println!("{}", graph);
+
+    let start = &"a";
+    let end = &"e";
 
     let (pred_map, dist_map) = bellman_ford(&graph, start);
 
@@ -34,7 +44,7 @@ fn main() {
         start, dist_map[end], end
     );
 
-    let path: Path<String> = Path::new_path_to(&pred_map, end).unwrap();
+    let path: Path<&str> = Path::new_path_to(&pred_map, end).unwrap();
     println!("{}", path);
 }
 

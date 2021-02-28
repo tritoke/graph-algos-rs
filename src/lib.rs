@@ -15,29 +15,32 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#![feature(str_split_once)]
 #![warn(missing_debug_implementations, rust_2018_idioms, missing_docs)]
 
 //! Graph library which provides an adjacency list based directed graph.
 //!
 //! # Example
 //! ```
-//! use graph_algos::{Graph, Edge};
-//! 
-//! let mut graph: Graph<u32> = Graph::empty();
-//! 
-//! // add an edge from node 0 to node one with a weight of 5
-//! graph.add_edge(0, Edge::new_with_weight(1, 5));
-//! 
-//! // add two more edges
-//! graph.add_edge(0, Edge::new_with_weight(2, 2));
-//! graph.add_edge(2, Edge::new_with_weight(1, 1));
-//! 
-//! if graph.is_edge(&0, &1) {
-//!     println!("There is an edge from node 0 to node 1");
-//! } else {
-//!     println!("There is no edge from node 0 to node 1");
-//! }
+//! use graph_algos::{Graph, graph};
+//!
+//! let mut graph: Graph<u32> = graph! {
+//!     1 => [2, 3],
+//!     2 => [4, 6],
+//!     3 => [5, 6],
+//!     5 => [6],
+//! };
+//!
+//! assert!(graph.is_edge(&1, &2));
+//!
+//! graph.remove_edge(&1, &2);
+//!
+//! assert!(!graph.is_edge(&1, &2));
+//!
+//! // assert that the second successor of nodes 2 and 3 are the same
+//! assert_eq!(
+//!     graph.succs(&2).map(|succs| &succs[1]),
+//!     graph.succs(&3).map(|succs| &succs[1]),
+//! );
 //! ```
 
 // use macros from the failure crate
@@ -56,5 +59,3 @@ pub use edge_weight::EdgeWeight;
 
 mod path;
 pub use path::{Path, PredMap};
-
-//#[macro_export]
