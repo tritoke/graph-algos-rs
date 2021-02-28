@@ -241,7 +241,11 @@ pub enum GraphParseError {
     FormatError,
 }
 
-impl<N: NodeBounds + FromStr<Err: Debug>> FromStr for Graph<N> {
+impl<N: NodeBounds> FromStr for Graph<N>
+where
+    N: FromStr,
+    <N as FromStr>::Err: Debug,
+{
     type Err = GraphParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -249,7 +253,7 @@ impl<N: NodeBounds + FromStr<Err: Debug>> FromStr for Graph<N> {
         // each line is node:edges seperated by spaces
 
         // new empty graph
-        let mut graph: Graph<N> = Default::default();
+        let mut graph: Graph<N> = Graph::empty();
 
         for line in s.lines() {
             let (u, edges) = line.split_once(':').ok_or(GraphParseError::FormatError)?;

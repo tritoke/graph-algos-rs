@@ -15,8 +15,8 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::{fmt::Debug, str::FromStr};
 use crate::{EdgeWeight, NodeBounds};
+use std::{fmt::Debug, str::FromStr};
 
 /// An Edge in the graph
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Ord, PartialOrd)]
@@ -96,7 +96,11 @@ pub enum ParseEdgeError {
     NodeParseError(String),
 }
 
-impl<N: NodeBounds + FromStr<Err: Debug>> FromStr for Edge<N> {
+impl<N: NodeBounds> FromStr for Edge<N>
+where
+    N: FromStr,
+    <N as FromStr>::Err: Debug,
+{
     type Err = ParseEdgeError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {

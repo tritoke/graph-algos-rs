@@ -17,7 +17,7 @@
 
 use std::collections::HashMap;
 
-use graph_algos::{Graph, NodeBounds, Edge, EdgeWeight, Path, PredMap};
+use graph_algos::{Edge, EdgeWeight, Graph, NodeBounds, Path, PredMap};
 
 type DistMap<'a, N> = HashMap<&'a N, EdgeWeight>;
 

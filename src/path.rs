@@ -100,7 +100,10 @@ impl<'a, N: NodeBounds> Path<'a, N> {
     /// ];
     /// assert_eq!(path.edges(), &correct);
     /// ```
-    pub fn new_path_to(pred_map: &'a PredMap<'a, N>, end_node: &'a N) -> Result<Self, &'static str> {
+    pub fn new_path_to(
+        pred_map: &'a PredMap<'a, N>,
+        end_node: &'a N,
+    ) -> Result<Self, &'static str> {
         let mut rev_path: Vec<Edge<&N>> = Vec::new();
         let mut next_node: &N = end_node;
 
@@ -111,13 +114,13 @@ impl<'a, N: NodeBounds> Path<'a, N> {
                 match edge.weight() {
                     Some(EdgeWeight::Weight(w)) => {
                         rev_path.push(Edge::new_with_weight(next_node, w));
-                    },
+                    }
                     Some(_) => {
                         return Err("Path not viable, edge has infinite weight.");
-                    },
+                    }
                     None => {
                         rev_path.push(Edge::new(next_node));
-                    },
+                    }
                 }
 
                 next_node = edge.destination();

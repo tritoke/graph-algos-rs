@@ -15,32 +15,30 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#![feature(associated_type_bounds, str_split_once)]
+#![feature(str_split_once)]
 #![warn(missing_debug_implementations, rust_2018_idioms, missing_docs)]
 
-/**
-Graph library which provides an adjacency list based directed graph.
-
-# Example
-```
-use graph_algos::{Graph, Edge};
-
-let mut graph: Graph<u32> = Graph::empty();
-
-// add an edge from node 0 to node one with a weight of 5
-graph.add_edge(0, Edge::new_with_weight(1, 5));
-
-// add two more edges
-graph.add_edge(0, Edge::new_with_weight(2, 2));
-graph.add_edge(2, Edge::new_with_weight(1, 1));
-
-if graph.is_edge(&0, &1) {
-    println!("There is an edge from node 0 to node 1");
-} else {
-    println!("There is no edge from node 0 to node 1");
-}
-```
-*/
+//! Graph library which provides an adjacency list based directed graph.
+//!
+//! # Example
+//! ```
+//! use graph_algos::{Graph, Edge};
+//! 
+//! let mut graph: Graph<u32> = Graph::empty();
+//! 
+//! // add an edge from node 0 to node one with a weight of 5
+//! graph.add_edge(0, Edge::new_with_weight(1, 5));
+//! 
+//! // add two more edges
+//! graph.add_edge(0, Edge::new_with_weight(2, 2));
+//! graph.add_edge(2, Edge::new_with_weight(1, 1));
+//! 
+//! if graph.is_edge(&0, &1) {
+//!     println!("There is an edge from node 0 to node 1");
+//! } else {
+//!     println!("There is no edge from node 0 to node 1");
+//! }
+//! ```
 
 // use macros from the failure crate
 #[macro_use]

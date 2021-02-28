@@ -15,7 +15,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use graph_algos::{Graph, NodeBounds, Edge, Path, PredMap};
+use graph_algos::{Edge, Graph, NodeBounds, Path, PredMap};
 use std::collections::{HashMap, HashSet, VecDeque};
 
 fn main() {
