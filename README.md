@@ -6,22 +6,26 @@ This was written to follow along with my university's Algorithms and Data Struct
 ## Example
 
 ```rust
-use graph_algos::{Graph, Edge};
+use graph_algos::{Graph, graph};
 
-let mut graph: Graph<u32> = Graph::empty();
+let mut graph: Graph<u32> = graph! {
+    1 => [2, 3],
+    2 => [4, 6],
+    3 => [5, 6],
+    5 => [6],
+};
 
-// add an edge from node 0 to node one with a weight of 5
-graph.add_edge(0, Edge::new_with_weight(1, 5));
+assert!(graph.is_edge(&1, &2));
 
-// add two more edges
-graph.add_edge(0, Edge::new_with_weight(2, 2));
-graph.add_edge(2, Edge::new_with_weight(1, 1));
+graph.remove_edge(&1, &2);
 
-if graph.is_edge(&0, &1) {
-    println!("There is an edge from node 0 to node 1");
-} else {
-    println!("There is no edge from node 0 to node 1");
-}
+assert!(!graph.is_edge(&1, &2));
+
+// assert that the second successor of nodes 2 and 3 are the same
+assert_eq!(
+    graph.succs(&2).map(|succs| &succs[1]),
+    graph.succs(&3).map(|succs| &succs[1]),
+);
 ```
 
 ## Documentation
