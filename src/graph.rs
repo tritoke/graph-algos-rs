@@ -187,14 +187,14 @@ impl<N: NodeBounds> Graph<N> {
 
     /// removes and edge from the graph
     /// ```
-    /// use graph_algos::{Graph, Edge};
+    /// use graph_algos::{Graph, graph, Edge};
     ///
-    /// let mut graph: Graph<u32> = [
-    ///     (5_u32, Edge::new(6_u32)),
-    ///     (6_u32, Edge::new(7_u32)),
-    ///     (7_u32, Edge::new(8_u32)),
-    ///     (8_u32, Edge::new(5_u32)),
-    /// ].iter().cloned().collect();
+    /// let mut graph: Graph<u32> = graph! {
+    ///     5 => [6],
+    ///     6 => [7],
+    ///     7 => [8],
+    ///     8 => [5],
+    /// };
     ///
     /// assert_eq!(graph.len(), 4);
     /// assert!(graph.is_edge(&5, &6));
@@ -215,11 +215,12 @@ impl<N: NodeBounds> Graph<N> {
 
     /// Returns whether an edge exists in the graph
     /// ```
-    /// use graph_algos::{Graph, Edge};
+    /// use graph_algos::{Graph, graph, Edge};
     ///
-    /// let mut graph: Graph<u32> = Graph::empty();
+    /// let graph: Graph<u32> = graph! {
+    ///     5 => [6]
+    /// };
     ///
-    /// graph.add_edge(5, Edge::new(6));
     /// assert!(graph.is_edge(&5, &6));
     /// ```
     pub fn is_edge(&self, u: &N, v: &N) -> bool {
@@ -232,14 +233,14 @@ impl<N: NodeBounds> Graph<N> {
 
     /// Returns the successors of a node in the graph
     /// ```
-    /// use graph_algos::{Graph, Edge};
+    /// use graph_algos::{Graph, graph, Edge};
     ///
-    /// let graph: Graph<u32> = [
-    ///     (5_u32, Edge::new(6_u32)),
-    ///     (5_u32, Edge::new(7_u32)),
-    ///     (5_u32, Edge::new(8_u32)),
-    ///     (5_u32, Edge::new(9_u32)),
-    /// ].iter().cloned().collect();
+    /// let graph: Graph<u32> = graph! {
+    ///     5 => [6],
+    ///     5 => [7],
+    ///     5 => [8],
+    ///     5 => [9],
+    /// };
     ///
     /// let correct = [6, 7, 8, 9].iter().map(|edge| Edge::new(*edge)).collect::<Vec<_>>();
     ///
@@ -251,14 +252,14 @@ impl<N: NodeBounds> Graph<N> {
 
     /// Returns the number of nodes in a graph
     /// ```
-    /// use graph_algos::{Graph, Edge};
+    /// use graph_algos::{Graph, graph, Edge};
     ///
-    /// let graph: Graph<u32> = [
-    ///     (5_u32, Edge::new(6_u32)),
-    ///     (5_u32, Edge::new(7_u32)),
-    ///     (5_u32, Edge::new(8_u32)),
-    ///     (5_u32, Edge::new(9_u32)),
-    /// ].iter().cloned().collect();
+    /// let graph: Graph<u32> = graph! {
+    ///     5 => [6],
+    ///     6 => [7],
+    ///     7 => [8],
+    ///     8 => [9],
+    /// };
     ///
     /// assert_eq!(graph.len(), 5);
     /// ```
@@ -282,14 +283,14 @@ impl<N: NodeBounds> Graph<N> {
 
     /// Returns an iterator over the nodes in a graph
     /// ```
-    /// use graph_algos::{Graph, Edge};
+    /// use graph_algos::{Graph, graph, Edge};
     ///
-    /// let graph: Graph<u32> = [
-    ///     (5_u32, Edge::new(6_u32)),
-    ///     (5_u32, Edge::new(7_u32)),
-    ///     (5_u32, Edge::new(8_u32)),
-    ///     (5_u32, Edge::new(9_u32)),
-    /// ].iter().cloned().collect();
+    /// let graph: Graph<u32> = graph! {
+    ///     5 => [6],
+    ///     6 => [7],
+    ///     7 => [8],
+    ///     8 => [9],
+    /// };
     ///
     /// let correct: Vec<&u32> = [5, 6, 7, 8, 9].iter().collect();
     /// let mut nodes: Vec<&u32> = graph.nodes().collect();
@@ -305,20 +306,20 @@ impl<N: NodeBounds> Graph<N> {
 
     /// Returns an iterator over the edges in the graph
     /// ```
-    /// use graph_algos::{Graph, Edge};
+    /// use graph_algos::{Graph, graph, Edge};
     ///
-    /// let graph: Graph<u32> = [
-    ///     (5_u32, Edge::new(6_u32)),
-    ///     (5_u32, Edge::new(7_u32)),
-    ///     (5_u32, Edge::new(8_u32)),
-    ///     (5_u32, Edge::new(9_u32)),
-    /// ].iter().cloned().collect();
+    /// let graph: Graph<u32> = graph! {
+    ///     5 => [6],
+    ///     5 => [7],
+    ///     6 => [8],
+    ///     6 => [9],
+    /// };
     ///
     /// let correct: Vec<(u32, Edge<u32>)> = vec![
     ///     (5, Edge::new(6)),
     ///     (5, Edge::new(7)),
-    ///     (5, Edge::new(8)),
-    ///     (5, Edge::new(9)),
+    ///     (6, Edge::new(8)),
+    ///     (6, Edge::new(9)),
     /// ];
     ///
     /// let mut edges: Vec<(u32, Edge<u32>)> = graph.edges().map(|(a, b)| (a.clone(), b.clone())).collect();
