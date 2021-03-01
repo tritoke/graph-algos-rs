@@ -22,6 +22,7 @@ use graph_algos::{Edge, EdgeWeight, Graph, graph, NodeBounds, Path, PredMap};
 type DistMap<'a, N> = HashMap<&'a N, EdgeWeight>;
 
 fn main() {
+    // inputs/graph_3.in
     let graph: Graph<&str> = graph! {
         "a" => ["c" => 2, "b" => 3],
         "b" => ["e" => 6, "d" => 5],
