@@ -61,26 +61,7 @@ pub struct Graph<N: NodeBounds> {
 /// .parse()
 /// .unwrap();
 ///
-/// // make sure they all have the same number of nodes
-/// assert_eq!(graph1.len(), graph2.len());
-///
-/// let mut g1_nodes = graph1.nodes().collect::<Vec<_>>();
-/// let mut g2_nodes = graph2.nodes().collect::<Vec<_>>();
-///
-/// g1_nodes.sort();
-/// g2_nodes.sort();
-///
-/// // make sure they all have the same nodes
-/// assert_eq!(g1_nodes, g2_nodes);
-///
-/// let mut g1_edges = graph1.edges().collect::<Vec<_>>();
-/// let mut g2_edges = graph2.edges().collect::<Vec<_>>();
-///
-/// g1_edges.sort();
-/// g2_edges.sort();
-///
-/// // make sure they all have the same edges
-/// assert_eq!(g1_edges, g2_edges);
+/// assert_eq!(graph1, graph2);
 /// ```
 ///
 /// ... and for weighted ones:
@@ -88,14 +69,14 @@ pub struct Graph<N: NodeBounds> {
 /// use graph_algos::{graph, Graph};
 ///
 /// // use the macro to define a weighted graph
-/// let graph1: Graph<&str> = graph! {
-///     "a" => [ "c" => 2, "b" => 3 ],
-///     "b" => [ "e" => 6, "d" => 5 ],
-///     "c" => [ "g" => 2, "f" => 1 ],
-///     "d" => [ "i" => 2, "h" => 3 ],
-///     "e" => [ "h" => 7 ],
-///     "f" => [ "e" => 6 ],
-///     "i" => [ "b" => 4 ],
+/// let graph1: Graph<String> = graph! {
+///     "a".into() => [ "c".into() => 2, "b".into() => 3 ],
+///     "b".into() => [ "e".into() => 6, "d".into() => 5 ],
+///     "c".into() => [ "g".into() => 2, "f".into() => 1 ],
+///     "d".into() => [ "i".into() => 2, "h".into() => 3 ],
+///     "e".into() => [ "h".into() => 7 ],
+///     "f".into() => [ "e".into() => 6 ],
+///     "i".into() => [ "b".into() => 4 ],
 /// };
 ///
 /// // parse from a string
@@ -111,31 +92,7 @@ pub struct Graph<N: NodeBounds> {
 /// .parse()
 /// .unwrap();
 ///
-/// // make sure they all have the same number of nodes
-/// assert_eq!(graph1.len(), graph2.len());
-///
-/// let mut g1_nodes = graph1.nodes().map(|node| *node).collect::<Vec<_>>();
-/// let mut g2_nodes = graph2.nodes().map(|node| node.as_str()).collect::<Vec<_>>();
-///
-/// g1_nodes.sort();
-/// g2_nodes.sort();
-///
-/// // make sure they all have the same nodes
-/// assert_eq!(g1_nodes, g2_nodes);
-///
-/// let mut g1_edges = graph1
-///     .edges()
-///     .map(|(node, edge)| (*node, *edge.destination(), edge.weight()))
-///     .collect::<Vec<_>>();
-/// let mut g2_edges = graph2
-///     .edges()
-///     .map(|(node, edge)| (node.as_str(), edge.destination().as_str(), edge.weight()))
-///     .collect::<Vec<_>>();
-///
-/// g1_edges.sort();
-/// g2_edges.sort();
-///
-/// assert_eq!(g1_edges, g2_edges);
+/// assert_eq!(graph1, graph2);
 /// ```
 #[macro_export]
 macro_rules! graph {
@@ -164,7 +121,7 @@ impl<N: NodeBounds> Graph<N> {
         Default::default()
     }
 
-    /// adds and edge to the graph
+    /// adds an edge to the graph
     /// ```
     /// use graph_algos::{Graph, Edge};
     ///
@@ -185,7 +142,7 @@ impl<N: NodeBounds> Graph<N> {
         self.backing_map.entry(u).or_insert_with(Vec::new).push(e);
     }
 
-    /// removes and edge from the graph
+    /// removes an edge from the graph
     /// ```
     /// use graph_algos::{Graph, graph, Edge};
     ///
@@ -337,12 +294,12 @@ impl<N: NodeBounds> Graph<N> {
 }
 
 impl<N: NodeBounds + Ord + fmt::Display> Graph<N> {
-    /// to_string is intended to be a direct inverse of the parse method
+    /// [`Graph::to_string`] is intended to be a direct inverse of the parse method
     /// it relies on the fmt::Display implementation for the node type
-    /// being able to produce a string which can be parsed with .parse()
+    /// being able to produce a string which can be parsed with `.parse()`
     ///
     /// Note: this is very expensive and requires additional trait bounds.
-    /// This is because we copy the data into a BTreeMap which has an implicit
+    /// This is because we copy the data into a `BTreeMap` which has an implicit
     /// ordering and thus we will always get a consistent output.
     /// ```
     /// use graph_algos::{Graph, graph};
@@ -415,11 +372,11 @@ impl<N: NodeBounds + Ord + fmt::Display> Graph<N> {
 }
 
 impl<N: NodeBounds + Ord + fmt::Display> Graph<N> {
-    /// to_string is intended to be a direct inverse of the parse method
+    /// [`Graph::to_string_unstable`] is intended to be a direct inverse of the parse method
     /// it relies on the fmt::Display implementation for the node type
     /// being able to produce a string which can be parsed with `.parse()`
     ///
-    /// Note: this is far cheaper than `to_string_sorted`, but the output is unstable.
+    /// Note: this is far cheaper than [`Graph::to_string`], but the output is unstable.
     /// ```
     /// use graph_algos::{Graph, graph};
     ///
